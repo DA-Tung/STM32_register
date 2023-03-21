@@ -12,6 +12,7 @@
 
 \+ Chỉ có quyền truy cập Read để tránh sửa đổi
 
+
 \- DS
 
 \+ Có quyền truy cập read-write
@@ -25,6 +26,7 @@
 int x = 1;
 
 static int y = 2; 
+
 
 \- BSS
 
@@ -40,6 +42,7 @@ int x;
 
 stactic int y = 0;
 
+
 \- Heap
 
 \+ Có quyền truy cập read-write
@@ -47,6 +50,7 @@ stactic int y = 0;
 \+ Được sử dụng để cấp phát bộ nhớ động như Malloc, Calloc...
 
 \+ Sẽ được giải phóng khi gọi hàm free
+
 
 \- Stack
 
@@ -57,6 +61,7 @@ stactic int y = 0;
 \+ Được sử dụng cấp phát cho biến local, input parameter ...
 
 \+ Sẽ được giải phóng khi ra khỏi block code/hàm
+
 
 **2. So sánh**
 
@@ -94,6 +99,7 @@ stactic int y = 0;
 
 +) BSS : Là vùng chứa biến toàn cục hoặc static với giá trị khởi tạo bằng không hoặc không khởi tạo
 
+
 **II. Macro and Funcion**
 
 **1. Macro**
@@ -107,6 +113,7 @@ stactic int y = 0;
 \- Được ứng dụng để định nghĩa các biến const, hàm …
 
 \- VD : #define SUM(a,b)	(a+b)
+
 
 **2. Funcion**
 
@@ -140,6 +147,7 @@ Chuyển PC tới hàm được gọi, thực hiện hàm đó xong rồi lấy 
 
 \+ Có thể debug để tìm ra lỗi trong quá trình thực thi
 
+
 **III.So sánh giữa Struct and Union**
 
 \- Giống nhau : có cách sử dụng và ý nghĩa giống nhau
@@ -160,6 +168,7 @@ Chuyển PC tới hàm được gọi, thực hiện hàm đó xong rồi lấy 
 
 \+ Việc thay đổi nội dung của 1 thành viên sẽ dẫn đến thay đổi nội dung các thành viên khác
 
+
 **IV. Static**
 
 **1. Định nghĩa :** 
@@ -167,6 +176,7 @@ Chuyển PC tới hàm được gọi, thực hiện hàm đó xong rồi lấy 
 \- Được khai báo bằng từ khóa : ***Static + kiểu dữ liệu***
 
 \- Có phạm vi truy cập trong một file,hàm , không thể truy cập từ file,hàm khác
+
 
 **2. Biến Stactic cục bộ**
 
@@ -176,9 +186,11 @@ Chuyển PC tới hàm được gọi, thực hiện hàm đó xong rồi lấy 
 
 \- Chỉ có thể được gọi nội bộ trong hàm khởi tạo ra nó
 
+
 **3. Biến static toàn cục**
 
 \- Chỉ có thể truy cập và sử dụng trong file được khởi tạo nó, các file khác không thể truy cập
+
 
 **V. Con trỏ**
 
@@ -189,6 +201,7 @@ Chuyển PC tới hàm được gọi, thực hiện hàm đó xong rồi lấy 
 \- Là những biến được lữu trữ địa chỉ bộ nhớ của những biến khác
 
 \- Do là biến được lưu dữ địa chỉ bộ nhớ nên tất cả các con trỏ đều có kích thước bằng nhau và phụ thuộc vào hệ thống là 16 bit, 32 bit …
+
 
 **2. Con trỏ hàm** 
 
@@ -201,6 +214,7 @@ Chuyển PC tới hàm được gọi, thực hiện hàm đó xong rồi lấy 
 \- Kiểu dữ liệu khai báo và kiểu dữ liệu trong hàm con trỏ phải tương được
 
 \- VD : int (\*ptr)(int x)
+
 
 **3. Con trỏ void** 
 
@@ -220,6 +234,7 @@ void \*ptr = &value;
 
 uint32\_t \*ptr2 = (uint32\_t \*)(\*ptr)
 
+
 **4. Con trỏ Null**
 
 \- Là con trỏ không trỏ tới địa chỉ nào cả và có giá trị là 0
@@ -228,6 +243,7 @@ uint32\_t \*ptr2 = (uint32\_t \*)(\*ptr)
 
 \- VD : int \*ptr = NULL;
 
+
 **5. Mảng con trỏ**
 
 \- Khai báo : type \*tên mảng[]
@@ -235,6 +251,7 @@ uint32\_t \*ptr2 = (uint32\_t \*)(\*ptr)
 \- Là mảng mà mỗi phần tử đều là một con trỏ và có địa chỉ khác nhau
 
 \- VD : int \*arr[] = { 1,2,3}
+
 
 **6. Pointer to Pointer** 
 
