@@ -4,7 +4,7 @@
 
 \- Gồm 5 phân vùng nhớ : Stack, Heap, BSS, DS, Text
 
-\- Text(Text segment)
+\- Text
 
 \+ Tất cả các mã máy trong chương trình sẽ được load vào vùng này
 
@@ -12,7 +12,7 @@
 
 \+ Chỉ có quyền truy cập Read để tránh sửa đổi
 
-\- DS(Initialized data segment)
+\- DS
 
 \+ Có quyền truy cập read-write
 
@@ -26,7 +26,7 @@ int x = 1;
 
 static int y = 2; 
 
-\- BSS(Uninitialized data segment)
+\- BSS
 
 \+ Có quyền truy cập read-write
 
@@ -40,7 +40,7 @@ int x;
 
 stactic int y = 0;
 
-\- Heap(Dynamic Memory Allocation)
+\- Heap
 
 \+ Có quyền truy cập read-write
 
@@ -48,7 +48,7 @@ stactic int y = 0;
 
 \+ Sẽ được giải phóng khi gọi hàm free
 
-\- Stack(Automnatic variable storage)
+\- Stack
 
 \+ Có cấu trúc LIFO(Last in, first out) Strucure
 
