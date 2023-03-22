@@ -2,6 +2,8 @@
 
 #include <stdio.h>
 #include <stdint.h>
+
+
 typedef enum{
     AO          = 1 << 0,   //0b00000001
     QUAN        = 1 << 1,   //0b00000010
@@ -12,6 +14,7 @@ typedef enum{
     GIAY        = 1 << 6,   //0b01000000
     TUI         = 1 << 7    //0b10000000
 }DoDungCaNhan;
+
 
 void Them_Vao_Gio_Hang(uint8_t *gio_hang, DoDungCaNhan ten_do_dung)
 {
