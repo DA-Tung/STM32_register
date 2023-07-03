@@ -1,9 +1,0 @@
---cpu=Cortex-M4.fp.sp
-".\objects\main.o"
-".\objects\adc.o"
-".\objects\startup_stm32f407xx.o"
-".\objects\system_stm32f4xx.o"
---strict --scatter ".\Objects\adc_polling_project.sct"
---summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
---info sizes --info totals --info unused --info veneers
---list ".\Listings\adc_polling_project.map" -o .\Objects\adc_polling_project.axf
