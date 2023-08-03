@@ -49,6 +49,15 @@ void gpio_config(GPIO_TypeDef* GPIOx, uint32_t PORTx, uint32_t PINx, IO_config P
 			// Configure output speed
 			GPIOx->OSPEEDR |= (uint32_t)(3 << (PINx*2));				
 		}
+		// Input Pin
+		else if(PIN_IO == PIN_INPUT)
+		{
+			// Select PIN and Mode I/O
+			GPIOx->MODER &= ~(1 << (PINx*2));		
+				
+			// Configure output speed
+			GPIOx->OSPEEDR &= ~((uint32_t)(3 << (PINx*2)));				
+		}		
 }
 
 

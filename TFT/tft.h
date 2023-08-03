@@ -4,6 +4,7 @@
 #include "stm32f4xx.h"
 #include "stm32f407xx.h"
 
+// Define PIN TFT
 #define TFT_RST					 	10U    // PC10 - eset TFT
 #define TFT_CS					 	9U     // PC9 - Chip select control
 #define TFT_DC_X        		 	8U     // PC8 - Select command/data control
@@ -83,7 +84,7 @@
 #define tft_digi_gamma_ctrl_2		0xE3
 #define tft_interface_ctrl       	0xF6
 
-/* Extend register commands */
+// Extend register commands
 #define LCD_POWERA               	0xCB   /* Power control A register */
 #define LCD_POWERB               	0xCF   /* Power control B register */
 #define LCD_DTCA                 	0xE8   /* Driver timing control A */
@@ -92,8 +93,8 @@
 #define LCD_3GAMMA_EN           	0xF2   /* 3 Gamma enable register */
 #define LCD_PRC                  	0xF7   /* Pump ratio control register */
 
-#define tft_horizontal   			240
-#define tft_vertical	 			320
+#define tft_row		  				0x00F0
+#define tft_col		 				0x0140
 
 #define Top_to_Bottom    			0U
 #define Bottom_to_Top    			1U
@@ -113,6 +114,19 @@
 #define LCD_Res_LtR      			0U
 #define LCD_Res_RtL		 			1U
 
+// Color
+#define white_color					0xFFFF
+#define black_color					0x0000
+#define red_color	       			0xF800
+#define green_color  				0x07E0
+#define blue_color	  				0x001F
+#define yellow_color  				0xFFE0
+#define orange_color  				0xFBE4
+#define cyan_color			  		0x07FF
+#define magenta_color  				0xA254
+#define gray_color  				0x7BEF
+#define brown_color 				0xBBCA
+
 typedef struct
 {
 	uint16_t MADCTL_B7;
@@ -127,16 +141,14 @@ typedef struct
 void tft_init(void);
 void tft_pin_config(void);
 
-void tft_write_8b(uint8_t value);
-//void tft_write_16b(uint16_t value);
-
+void write_8b(uint8_t value);
 void tft_write_data_8b(uint8_t data);
 void tft_write_data_16b(uint16_t data);
-
 void tft_write_cmd_8b(uint8_t cmd);
 
-uint8_t tft_read_8b(void);
-uint16_t tft_read_16b(void);
+uint8_t read_8b(void);
+uint8_t tft_read_data_8b(void);
+uint16_t tft_read_data_16b(void);
 
 void MADCTL_config(MADCTL_para MADCTL_data);
 void tft_access_ctrl(int dir_dislay);
@@ -144,24 +156,10 @@ void tft_init(void);
 
 void tft_set_coordinates(uint16_t S_col_data, uint16_t E_col_data, uint16_t S_row_data, uint16_t E_row_data);
 void tft_write_pixel(uint16_t col, uint16_t row, uint16_t m_data);
-void tft_fill_screen(uint16_t S_col,uint16_t E_col, uint16_t S_row,uint16_t E_row, uint16_t color);
+void tft_fill_screen(uint16_t S_col,uint16_t E_col, uint16_t S_row, uint16_t E_row, uint16_t color);
 uint16_t tft_read_data_pixel(uint16_t col, uint16_t row);
 void tft_write_font(uint16_t font_col, uint16_t font_row, uint8_t font_ascii, uint16_t font_color);
-
-
-// Color
-#define write_color				0xFFFF
-#define black_color				0x0000
-#define red_color	       		0xF800
-#define green_color  			0x07E0
-#define blue_color	  			0x001F
-#define yellow_color  			0xFFE0
-#define orange_color  			0xFBE4
-#define cyan_color			  	0x07FF
-#define magenta_color  			0xA254
-#define gray_color  			0x7BEF
-#define brown_color 			0xBBCA
-
+void TFT_Reset(void);
 
 #endif //_TFT_H_
 

@@ -3,6 +3,9 @@
 #include "tft.h"
 #include "gpio.h"
 #include "systick.h"
+#include <math.h>
+#include <stdio.h>      /* printf */
+#include <stdlib.h>     /* abs */
 
 // FONT 5x8
 unsigned char Font_symbol[96][8] =
@@ -138,13 +141,31 @@ unsigned char Font_symbol[96][8] =
 #define TFT_RD_HIGH              	 gpio_output(GPIOC, TFT_RD, PIN_SET)
 #define TFT_RD_ACTIVE				 gpio_config(GPIOC, PORTC, TFT_RD, PIN_OUTPUT)
 
-// Config D0 ~ D7
-uint32_t D0_7 = TFT_D0 | TFT_D1 | TFT_D2 | TFT_D3 | TFT_D4 | TFT_D5 | TFT_D6 | TFT_D7;
-
-#define TFT_PIN_D0_7             	 gpio_config(GPIOD, PORTD, D0_7 , PIN_OUTPUT)
-#define TFT_PIN_D0_7_CLEAR       	 gpio_output(GPIOD, D0_7 , PIN_RESET)
-
 // Config PIN_______________________________________________________________	
+void SetReadPin(void)
+{
+	gpio_config(GPIOD, PORTD, TFT_D0 , PIN_INPUT);
+	gpio_config(GPIOD, PORTD, TFT_D1 , PIN_INPUT);
+	gpio_config(GPIOD, PORTD, TFT_D2 , PIN_INPUT);
+	gpio_config(GPIOD, PORTD, TFT_D3 , PIN_INPUT);	
+	gpio_config(GPIOD, PORTD, TFT_D4 , PIN_INPUT);
+	gpio_config(GPIOD, PORTD, TFT_D5 , PIN_INPUT);
+	gpio_config(GPIOD, PORTD, TFT_D6 , PIN_INPUT);
+	gpio_config(GPIOD, PORTD, TFT_D7 , PIN_INPUT);	
+}
+
+void SetWritePin(void)
+{
+	gpio_config(GPIOD, PORTD, TFT_D0 , PIN_OUTPUT);
+	gpio_config(GPIOD, PORTD, TFT_D1 , PIN_OUTPUT);
+	gpio_config(GPIOD, PORTD, TFT_D2 , PIN_OUTPUT);
+	gpio_config(GPIOD, PORTD, TFT_D3 , PIN_OUTPUT);	
+	gpio_config(GPIOD, PORTD, TFT_D4 , PIN_OUTPUT);
+	gpio_config(GPIOD, PORTD, TFT_D5 , PIN_OUTPUT);
+	gpio_config(GPIOD, PORTD, TFT_D6 , PIN_OUTPUT);
+	gpio_config(GPIOD, PORTD, TFT_D7 , PIN_OUTPUT);	
+}
+
 void tft_pin_config(void)
 {
 	TFT_RST_ACTIVE; TFT_RST_LOW;
@@ -157,15 +178,23 @@ void tft_pin_config(void)
 	
 	TFT_RD_ACTIVE; TFT_RD_HIGH;
 	
-	TFT_PIN_D0_7; TFT_PIN_D0_7_CLEAR;
+	SetWritePin();
 }
 
 // Write 8 bit value_______________________________________________________________	
-void tft_write_8b(uint8_t value)
+void write_8b(uint8_t value)
+{		
+	GPIOD->ODR = (uint16_t)value & 0x00FF;
+}
+
+// Read 8 bit value_______________________________________________________________	
+uint8_t read_8b(void)
 {
-	GPIOD->ODR =  0;
+	uint8_t value;
 	
-	GPIOD->ODR = ((uint16_t)value << 8) & 0xFF00;
+	value = (uint8_t)(GPIOD->IDR & 0x00FF);
+	
+	return value;
 }
 
 // Write 8 bit data_______________________________________________________________	
@@ -179,7 +208,7 @@ void tft_write_data_8b(uint8_t data)
 	
 	TFT_WR_LOW;
 	
-	tft_write_8b(data);
+	write_8b(data);
 	
 	TFT_WR_HIGH;
 	
@@ -192,8 +221,8 @@ void tft_write_data_16b(uint16_t data)
 	uint16_t data_h = data >> 8;
 	uint16_t data_l = data & 0xFF;
 	
-	tft_write_8b(data_h);	
-	tft_write_8b(data_l);		
+	write_8b(data_h);	
+	write_8b(data_l);		
 }
 
 // Write 8 bit cmd_______________________________________________________________	
@@ -207,7 +236,7 @@ void tft_write_cmd_8b(uint8_t cmd)
 	
 	TFT_WR_LOW;
 	
-	tft_write_8b(cmd);
+	write_8b(cmd);
 	
 	TFT_WR_HIGH;
 	
@@ -217,9 +246,11 @@ void tft_write_cmd_8b(uint8_t cmd)
 }
 
 // Read 8 bit data_______________________________________________________________	
-uint8_t tft_read_8b(void)
+uint8_t tft_read_data_8b(void)
 {
 	uint8_t data = 0;
+	
+	SetReadPin();
 	
 	TFT_CS_LOW;
 	
@@ -229,7 +260,7 @@ uint8_t tft_read_8b(void)
 	
 	TFT_RD_LOW;
 	
-	data = (GPIOD->IDR & 0xFF) >> 8;
+	data = read_8b();
 	
 	TFT_RD_HIGH;
 	
@@ -239,15 +270,15 @@ uint8_t tft_read_8b(void)
 }
 
 // Read 16 bit data_______________________________________________________________	
-uint16_t tft_read_16b(void)
+uint16_t tft_read_data_16b(void)
 {
 	uint16_t data = 0;
 	
 	uint8_t data_h;
 	uint8_t data_l;
 	
-	data_h = tft_read_8b();
-	data_l = tft_read_8b();
+	data_h = tft_read_data_8b();
+	data_l = tft_read_data_8b();
 	
 	data = (data_h << 8) | data_l;
 	
@@ -256,135 +287,78 @@ uint16_t tft_read_16b(void)
 
 //FUNCION****************************************************************
 
-void MADCTL_config(MADCTL_para MADCTL_data)
-{
-	uint16_t read_value = 0;
-	
-	// Top - Bottom
-	if(MADCTL_data.MADCTL_B7 == Top_to_Bottom)
-	{
-		read_value |= 0 << 7;
-	}
-	else if(MADCTL_data.MADCTL_B7 == Bottom_to_Top)
-	{
-		read_value |= 1 << 7;
-	}
-		
-	// Left - Right
-	if(MADCTL_data.MADCTL_B6 == Left_to_Right)
-	{
-		read_value |= 0 << 6;
-	}
-	else if(MADCTL_data.MADCTL_B6 == Right_to_Left)
-	{
-		read_value |= 1 << 6;
-	}	
-	
-	// Normal - Reverse
-	if(MADCTL_data.MADCTL_B5 == Normal_mode)
-	{
-		read_value |= 0 << 5;
-	}
-	else if(MADCTL_data.MADCTL_B5 == Reverse_mode)
-	{
-		read_value |= 1 << 5;
-	}
-	
-	// LCD Register Top - Bottom
-	if(MADCTL_data.MADCTL_B4 == LCD_Res_TtB)
-	{
-		read_value |= 0 << 4;
-	}
-	else if(MADCTL_data.MADCTL_B4 == LCD_Res_BtT)
-	{
-		read_value |= 1 << 4;
-	}	
-	
-	// Interface RGB
-	if(MADCTL_data.MADCTL_B3 == RGB_interface)
-	{
-		read_value |= 0 << 3;
-	}
-	else if(MADCTL_data.MADCTL_B3 == BGR_interface)
-	{
-		read_value |= 1 << 3;
-	}
-	
-	// LCD Register Left - Right
-	if(MADCTL_data.MADCTL_B2 == LCD_Res_LtR)
-	{
-		read_value |= 0 << 2;
-	}
-	else if(MADCTL_data.MADCTL_B2 == LCD_Res_RtL)
-	{
-		read_value |= 1 << 2;
-	}		
-}
-
 // Set coordinate pixel_______________________________________________________________	
 void tft_set_coordinates(uint16_t S_col_data, uint16_t E_col_data, uint16_t S_row_data, uint16_t E_row_data)
 {
-	// Set Column  
-	tft_write_cmd_8b(tft_column_addr);               // set cmd column address
+	// Set Column address
+	tft_write_cmd_8b(tft_column_addr);               					
 	
-	tft_write_data_8b(S_col_data >> 8);             // write data SC
-	tft_write_data_8b(S_col_data & 0xFF);
+	// write data SC	
+	tft_write_data_16b(S_col_data);
 	
-	tft_write_data_8b(E_col_data >> 8);             // write data EC
-	tft_write_data_8b(E_col_data & 0xFF);
+	// write data EC	
+	tft_write_data_16b(E_col_data);
 	
-	// Set Page
-	tft_write_cmd_8b(tft_page_addr);                 // set cmd page address
+	// Set Page adrress
+	tft_write_cmd_8b(tft_page_addr);                					
 	
-	tft_write_data_8b(S_row_data >> 8);             // write data SP
-	tft_write_data_8b(S_row_data & 0xFF);
+	// write data SP	
+	tft_write_data_16b(S_row_data);
 	
-	tft_write_data_8b(E_row_data >> 8);             // write data EP
-	tft_write_data_8b(E_row_data & 0xFF);
+	// write data EP	
+	tft_write_data_16b(E_row_data);
+	
+	// Write to RAM
+	tft_write_cmd_8b(tft_memory_wr);                 	
 }
 
 // Write memory data 1 pixel_______________________________________________________________	
 void tft_write_pixel(uint16_t col, uint16_t row, uint16_t m_data)
 {
-	// Set coordinate
-	tft_set_coordinates(col, col, row, row);
+	// Check col and row
+	if((col >= tft_col) || (row >= tft_row))
+		return;
 	
-	// Send cmd memory
-	tft_write_cmd_8b(tft_memory_wr);
+	// Set coordinate
+	tft_set_coordinates(col, col+1, row, row+1);
 	
 	// Write data
 	tft_write_data_16b(m_data);
+	
+	// Write to RAM
+	tft_write_cmd_8b(tft_memory_wr);  	
 }
 
 // Write memory data multi pixel_______________________________________________________________	
-void tft_fill_screen(uint16_t S_col,uint16_t E_col, uint16_t S_row,uint16_t E_row, uint16_t color)
-{
-	unsigned long area;
+void tft_fill_screen(uint16_t S_col,uint16_t E_col, uint16_t S_row, uint16_t E_row, uint16_t color)
+{	
+	// Check col and row
+	if((E_col >= tft_col) || (E_row >= tft_row))
+		return;	
 	
 	uint16_t delta_col, delta_row;
 	
-	delta_col = S_col - E_col + 1;
-	delta_row = S_row - E_row + 1;
-	
-	area = delta_col *delta_row;
+	delta_col = E_col - S_col;
+	delta_row = E_row - S_row;
 	
 	// Set coordinate
-	tft_set_coordinates(S_col, E_col, S_row, E_row);
+	tft_set_coordinates(S_col, E_col, S_row, E_row);	
 	
-	// Send cmd memory
-	tft_write_cmd_8b(tft_memory_wr);
-	
-	for(int i = 0; i < area; i++)
+	// Write data for each pixel
+	for(uint16_t i_col = 0; i_col < delta_col; i_col++)
 	{
-		// Write data
-		tft_write_data_16b(color);		
-	}
+		for(uint16_t i_row = 0; i_row < delta_row; i_row++)
+		{
+			// Write data
+			tft_write_pixel(i_row,i_col,color);	
+		}	
+	} 	
 }
 
 // Write font data_______________________________________________________________	
 void tft_write_font(uint16_t font_col, uint16_t font_row, uint8_t font_ascii, uint16_t font_color)
 {
-	tft_fill_screen(0,0x00EF,0,0x13F,write_color);
+	tft_fill_screen(0,0x13F,0,0x0EF,white_color);
 	
 	for(int row = 0; row < 8; row++)
 	{
@@ -396,7 +370,7 @@ void tft_write_font(uint16_t font_col, uint16_t font_row, uint8_t font_ascii, ui
 			}
 			else
 			{
-				tft_write_pixel(font_col + col, font_row + row, write_color);
+				tft_write_pixel(font_col + col, font_row + row, white_color);
 			}
 		}
 	}
@@ -407,13 +381,13 @@ uint16_t tft_read_data_pixel(uint16_t col, uint16_t row)
 {
 	uint16_t rd_data;
 	
-	tft_set_coordinates(col, col, row, row);
+	tft_set_coordinates(col, col+1, row, row+1);
 	
 	tft_write_cmd_8b(tft_memory_rd);
 	
-	tft_read_16b();											// dummy data
+	tft_read_data_16b();								// dummy data
 	
-	rd_data= tft_read_16b();						// Read data
+	rd_data= tft_read_data_16b();						// Read data
 	
 	return rd_data;
 }
@@ -479,221 +453,246 @@ void tft_access_ctrl(int dir_dislay)
 	tft_set_coordinates(0,value_h,0,value_v);
 }
 
-// TFT init_______________________________________________________________	
-//void tft_init(void)
-//{
-//	// Reset TFT
-//	tft_write_cmd_8b(tft_reset);
-//	delay_systick_ms(1000);
-//	
-//	// Config MADCTL register
-////	MADCTL_para MADCTL_read_data;
-////	
-////	MADCTL_read_data.MADCTL_B7 = Top_to_Bottom;
-////	MADCTL_read_data.MADCTL_B6 = Left_to_Right;
-////	MADCTL_read_data.MADCTL_B5 = Normal_mode;
-////	MADCTL_read_data.MADCTL_B4 = LCD_Res_TtB;
-////	MADCTL_read_data.MADCTL_B3 = BGR_interface;
-////	MADCTL_read_data.MADCTL_B2 = LCD_Res_LtR;	
-////	
-////	MADCTL_config(MADCTL_read_data);
-//	
-////	// TFT config vertical scolling
-////	tft_write_cmd_8b(tft_ver_scrolling);	
-////	
-////	tft_write_data_16b(0);									// TFA = 2
-////	tft_write_data_16b(0x0002);
-////	
-////	tft_write_data_16b(0x0001);							// VSA = 316
-////	tft_write_data_16b(0x003C);
-////	
-////	tft_write_data_16b(0);									// BFA = 2
-////	tft_write_data_16b(0x0002);
-//	
-//	// Power control 1
-//	tft_write_cmd_8b(tft_power_ctrl_1);
-//	tft_write_data_8b(0x21);
-//	
-//	// Power control 2
-//	tft_write_cmd_8b(tft_power_ctrl_2);
-//	tft_write_data_8b(0x11);
-//	
-//	// VCOM Control 1
-//	tft_write_cmd_8b(tft_vcom_ctrl_1);
-//	tft_write_data_8b(0x45);						      // VMH = 4.425V
-//	tft_write_data_8b(0x45);									// VML = -0.775V
-//	
-//	// VCOM Control 2
-//	tft_write_cmd_8b(tft_vcom_ctrl_2);
-//	tft_write_data_8b(0x90);									// VMH - 48, VML - 48 
-//	
-//	// TFT memory access
-//	tft_access_ctrl(1);
-//	
-//	// Pixel Format set
-//	tft_write_cmd_8b(tft_pixel_format_set);
-//	tft_write_data_8b(0x05);
-//	
-//	// Frame Rate Control
-//	tft_write_cmd_8b(tft_frame_rate_ctrl);
-//	tft_write_cmd_8b(0);                       // F_osc
-//	tft_write_data_8b(0x18);									 // Frame Rate = 79 Hz
-//	
-//	// Display FUnction Control
-//	tft_write_cmd_8b(tft_display_func);
-//	tft_write_data_8b(0x0A);
-//	tft_write_data_8b(0x82);
-//	tft_write_data_8b(0x27);
-//	
-//	// Sleep out
-//	tft_write_cmd_8b(tft_sleep_out);
-//	
-//	// Display on
-//	tft_write_cmd_8b(tft_display_on);
-//}
+void MADCTL_config(MADCTL_para MADCTL_data)
+{
+	uint16_t read_value = 0;
 
+	// Top - Bottom
+	if(MADCTL_data.MADCTL_B7 == Top_to_Bottom)
+	{
+		read_value |= 0 << 7;
+	}
+	else if(MADCTL_data.MADCTL_B7 == Bottom_to_Top)
+	{
+		read_value |= 1 << 7;
+	}
+		
+	// Left - Right
+	if(MADCTL_data.MADCTL_B6 == Left_to_Right)
+	{
+		read_value |= 0 << 6;
+	}
+	else if(MADCTL_data.MADCTL_B6 == Right_to_Left)
+	{
+		read_value |= 1 << 6;
+	}	
+
+	// Normal - Reverse
+	if(MADCTL_data.MADCTL_B5 == Normal_mode)
+	{
+		read_value |= 0 << 5;
+	}
+	else if(MADCTL_data.MADCTL_B5 == Reverse_mode)
+	{
+		read_value |= 1 << 5;
+	}
+
+	// LCD Register Top - Bottom
+	if(MADCTL_data.MADCTL_B4 == LCD_Res_TtB)
+	{
+		read_value |= 0 << 4;
+	}
+	else if(MADCTL_data.MADCTL_B4 == LCD_Res_BtT)
+	{
+		read_value |= 1 << 4;
+	}	
+
+	// Interface RGB
+	if(MADCTL_data.MADCTL_B3 == RGB_interface)
+	{
+		read_value |= 0 << 3;
+	}
+	else if(MADCTL_data.MADCTL_B3 == BGR_interface)
+	{
+		read_value |= 1 << 3;
+	}
+
+	// LCD Register Left - Right
+	if(MADCTL_data.MADCTL_B2 == LCD_Res_LtR)
+	{
+		read_value |= 0 << 2;
+	}
+	else if(MADCTL_data.MADCTL_B2 == LCD_Res_RtL)
+	{
+		read_value |= 1 << 2;
+	}
+	
+	// Write data
+	tft_write_data_16b(read_value);
+	
+}
+
+// TFT Reset_______________________________________________________________	
+void TFT_Reset() 
+{
+	TFT_RST_HIGH;
+	delay_systick_us(50);
+	TFT_RST_LOW;
+	TFT_CS_HIGH;
+	delay_systick_us(50);
+	tft_write_cmd_8b(0x01);
+	TFT_CS_LOW;
+}
+
+// TFT init_______________________________________________________________	
 void tft_init(void)
 {	
-	tft_pin_config();
+	// TFT config PIN
+	//tft_pin_config();
+		
+	// TFT Reset
+	//TFT_Reset();
+	tft_write_cmd_8b(tft_reset);
 	
-	  /* Configure LCD */
-  tft_write_cmd_8b(0xCA);
-  tft_write_data_8b(0xC3);
-  tft_write_data_8b(0x08);
-  tft_write_data_8b(0x50);
+	// TFT config coordinate
+	tft_access_ctrl(0);
 	
-  tft_write_cmd_8b(LCD_POWERB);
-  tft_write_data_8b(0x00);
-  tft_write_data_8b(0xC1);
-  tft_write_data_8b(0x30);
+	// config MADCTL
+	MADCTL_para MADCTL_inform;
+	MADCTL_inform.MADCTL_B2 = LCD_Res_LtR;	
+	MADCTL_inform.MADCTL_B3 = RGB_interface;
+	MADCTL_inform.MADCTL_B4 = LCD_Res_TtB;
+	MADCTL_inform.MADCTL_B5 = Normal_mode;
+	MADCTL_inform.MADCTL_B6 = Left_to_Right;
+	MADCTL_inform.MADCTL_B7 = Top_to_Bottom;
+	MADCTL_config(MADCTL_inform);	
 	
-  tft_write_cmd_8b(LCD_POWER_SEQ);
-  tft_write_data_8b(0x64);
-  tft_write_data_8b(0x03);
-  tft_write_data_8b(0x12);
-  tft_write_data_8b(0x81);
+	/* Configure LCD */
 	
-  tft_write_cmd_8b(LCD_DTCA);
-  tft_write_data_8b(0x85);
-  tft_write_data_8b(0x00);
-  tft_write_data_8b(0x78);
+	// Power control A
+	tft_write_cmd_8b(LCD_POWERA);
+	tft_write_data_8b(0x39);
+	tft_write_data_8b(0x2C);
+	tft_write_data_8b(0x00);
+	tft_write_data_8b(0x34);
+	tft_write_data_8b(0x02);
 	
-  tft_write_cmd_8b(LCD_POWERA);
-  tft_write_data_8b(0x39);
-  tft_write_data_8b(0x2C);
-  tft_write_data_8b(0x00);
-  tft_write_data_8b(0x34);
-  tft_write_data_8b(0x02);
+	// Power control B
+	tft_write_cmd_8b(LCD_POWERB);
+	tft_write_data_8b(0x00);
+	tft_write_data_8b(0xC1);
+	tft_write_data_8b(0x30);
 	
-  tft_write_cmd_8b(LCD_PRC);
-  tft_write_data_8b(0x20);
+	// Driver timing control A
+	tft_write_cmd_8b(LCD_DTCA);
+	tft_write_data_8b(0x85);
+	tft_write_data_8b(0x00);
+	tft_write_data_8b(0x78);
 	
-  tft_write_cmd_8b(LCD_DTCB);
-  tft_write_data_8b(0x00);
-  tft_write_data_8b(0x00);
+	// Driver timing control B
+	tft_write_cmd_8b(LCD_DTCB);
+	tft_write_data_8b(0x00);
+	tft_write_data_8b(0x00);
 	
-  tft_write_cmd_8b(tft_frame_rate_ctrl);
-  tft_write_data_8b(0x00);
-  tft_write_data_8b(0x1B);
+	// Power on sequence control
+	tft_write_cmd_8b(LCD_POWER_SEQ);
+	tft_write_data_8b(0x64);
+	tft_write_data_8b(0x03);
+	tft_write_data_8b(0x12);
+	tft_write_data_8b(0x81);
 	
-  tft_write_cmd_8b(tft_display_func);
-  tft_write_data_8b(0x0A);
-  tft_write_data_8b(0xA2);
+	// Pump ratio control
+	tft_write_cmd_8b(LCD_PRC);
+	tft_write_data_8b(0x20);
 	
-  tft_write_cmd_8b(tft_power_ctrl_1);
-  tft_write_data_8b(0x10);
+	// Power control 1
+	tft_write_cmd_8b(tft_power_ctrl_1);
+	tft_write_data_8b(0x23);
 	
-  tft_write_cmd_8b(tft_power_ctrl_2);
-  tft_write_data_8b(0x10);
+	// Power control 2
+	tft_write_cmd_8b(tft_power_ctrl_2);
+	tft_write_data_8b(0x10);
 	
-  tft_write_cmd_8b(tft_vcom_ctrl_1);
-  tft_write_data_8b(0x45);
-  tft_write_data_8b(0x15);
+	// Vcom control 1
+	tft_write_cmd_8b(tft_vcom_ctrl_1);
+	tft_write_data_8b(0x3E);
+	tft_write_data_8b(0x28);
+
+	// Vcom control 2
+	tft_write_cmd_8b(tft_vcom_ctrl_2);
+	tft_write_data_8b(0x86);	
 	
-  tft_write_cmd_8b(tft_vcom_ctrl_2);
-  tft_write_data_8b(0x90);
+	// tft memory access
+	tft_write_cmd_8b(tft_memory_access);
+	tft_write_data_8b(0x48);
 	
-  tft_write_cmd_8b(tft_memory_access);
-  tft_write_data_8b(0xC8);
+	// Pixel format set
+	tft_write_cmd_8b(tft_pixel_format_set);
+	tft_write_data_8b(0x55); 
 	
-  tft_write_cmd_8b(LCD_3GAMMA_EN);
-  tft_write_data_8b(0x00);
+	// Frame Rate Control
+	tft_write_cmd_8b(tft_frame_rate_ctrl);
+	tft_write_data_8b(0x00);
+	tft_write_data_8b(0x18);
 	
-  tft_write_cmd_8b(tft_rgb_interface);
-  tft_write_data_8b(0xC2);
+	// Display funcion control
+	tft_write_cmd_8b(tft_display_func);
+	tft_write_data_8b(0x08);
+	tft_write_data_8b(0x82);
+	tft_write_data_8b(0x27);
 	
-  tft_write_cmd_8b(tft_display_func);
-  tft_write_data_8b(0x0A);
-  tft_write_data_8b(0xA7);
-  tft_write_data_8b(0x27);
-  tft_write_data_8b(0x04);
-  
-  /* Colomn address set */
-  tft_write_cmd_8b(tft_column_addr);
-  tft_write_data_8b(0x00);
-  tft_write_data_8b(0x00);
-  tft_write_data_8b(0x00);
-  tft_write_data_8b(0xEF);
+	// 3Gamma Funcion disable
+	tft_write_cmd_8b(LCD_3GAMMA_EN);
+	tft_write_data_8b(0x00);
 	
-  /* Page address set */
-  tft_write_cmd_8b(tft_page_addr);
-  tft_write_data_8b(0x00);
-  tft_write_data_8b(0x00);
-  tft_write_data_8b(0x01);
-  tft_write_data_8b(0x3F);
+	// Gamma curve selected
+	tft_write_cmd_8b(tft_gamma_set);
+	tft_write_data_8b(0x01);	
 	
-  tft_write_cmd_8b(tft_interface_ctrl);
-  tft_write_data_8b(0x01);
-  tft_write_data_8b(0x00);
-  tft_write_data_8b(0x06);
-  
-  tft_write_cmd_8b(tft_memory_wr);
-  delay_systick_ms(200);
-  
-  tft_write_cmd_8b(tft_gamma_set);
-  tft_write_data_8b(0x01);
-  
-  tft_write_cmd_8b(tft_pos_gamma_correct);
-  tft_write_data_8b(0x0F);
-  tft_write_data_8b(0x29);
-  tft_write_data_8b(0x24);
-  tft_write_data_8b(0x0C);
-  tft_write_data_8b(0x0E);
-  tft_write_data_8b(0x09);
-  tft_write_data_8b(0x4E);
-  tft_write_data_8b(0x78);
-  tft_write_data_8b(0x3C);
-  tft_write_data_8b(0x09);
-  tft_write_data_8b(0x13);
-  tft_write_data_8b(0x05);
-  tft_write_data_8b(0x17);
-  tft_write_data_8b(0x11);
-  tft_write_data_8b(0x00);
-	
-  tft_write_cmd_8b(tft_neg_gamma_correct);
-  tft_write_data_8b(0x00);
-  tft_write_data_8b(0x16);
-  tft_write_data_8b(0x1B);
-  tft_write_data_8b(0x04);
-  tft_write_data_8b(0x11);
-  tft_write_data_8b(0x07);
-  tft_write_data_8b(0x31);
-  tft_write_data_8b(0x33);
-  tft_write_data_8b(0x42);
-  tft_write_data_8b(0x05);
-  tft_write_data_8b(0x0C);
-  tft_write_data_8b(0x0A);
-  tft_write_data_8b(0x28);
-  tft_write_data_8b(0x2F);
-  tft_write_data_8b(0x0F);
-  
-  tft_write_cmd_8b(tft_sleep_out);
-  delay_systick_ms(200);
-	
-  tft_write_cmd_8b(tft_display_on);
-	
-  /* GRAM start writing */
-//  tft_write_cmd_8b(tft_memory_wr);
+	// RGB Interface
+	tft_write_cmd_8b(tft_rgb_interface);
+	tft_write_data_8b(0xC2);
+
+	// Interface control
+	tft_write_cmd_8b(tft_interface_ctrl);
+	tft_write_data_8b(0x01);
+	tft_write_data_8b(0x00);
+	tft_write_data_8b(0x06);
+
+	//Positive Gamma Correction
+	tft_write_cmd_8b(tft_pos_gamma_correct);
+	tft_write_data_8b(0x0F);
+	tft_write_data_8b(0x31);
+	tft_write_data_8b(0x2B);
+	tft_write_data_8b(0x0C);
+	tft_write_data_8b(0x0E);
+	tft_write_data_8b(0x08);
+	tft_write_data_8b(0x4E);
+	tft_write_data_8b(0xF1);
+	tft_write_data_8b(0x37);
+	tft_write_data_8b(0x07);
+	tft_write_data_8b(0x10);
+	tft_write_data_8b(0x03);
+	tft_write_data_8b(0x0E);
+	tft_write_data_8b(0x09);
+	tft_write_data_8b(0x00);
+
+	//Negative Gamma  Correction
+	tft_write_cmd_8b(tft_neg_gamma_correct);
+	tft_write_data_8b(0x00);
+	tft_write_data_8b(0x0E);
+	tft_write_data_8b(0x14);
+	tft_write_data_8b(0x03);
+	tft_write_data_8b(0x11);
+	tft_write_data_8b(0x07);
+	tft_write_data_8b(0x31);
+	tft_write_data_8b(0xC1);
+	tft_write_data_8b(0x48);
+	tft_write_data_8b(0x08);
+	tft_write_data_8b(0x0F);
+	tft_write_data_8b(0x0C);
+	tft_write_data_8b(0x31);
+	tft_write_data_8b(0x36);
+	tft_write_data_8b(0x0F);
+
+	// Sleep out
+	tft_write_cmd_8b(tft_sleep_out);
+
+	// Turn on Display 
+	tft_write_cmd_8b(tft_display_on);
+
+	// TFT memory write
+	tft_write_cmd_8b(tft_memory_wr);
 }
 
 
