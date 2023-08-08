@@ -17,6 +17,11 @@
 void GPIO_ConfigPIN(void)
 {
 	tft_pin_config();
+	
+//	gpio_config(GPIOD, PORTD,PIN12,PIN_OUTPUT);
+//	gpio_config(GPIOD, PORTD,PIN13,PIN_OUTPUT);
+//	gpio_config(GPIOD, PORTD,PIN14,PIN_OUTPUT);
+//	gpio_config(GPIOD, PORTD,PIN15,PIN_OUTPUT);
 }
 
 // Program main***********************************************************
@@ -25,14 +30,22 @@ int main()
 	SysClock_configure();
 	
 	GPIO_ConfigPIN();
-	
+
 	tft_init();
 	
 	while(1)
 	{
-		tft_fill_screen(0, 0x013E, 0, 0x0055, red_color);	
-		delay_systick_ms(2000);
-		tft_fill_screen(0, 0x013E, 0, 0x00EE, green_color);			
+		tft_fill_screen(green_color);	
+		delay_systick_ms(500);
+		tft_fill_screen(red_color);			
+		delay_systick_ms(500);	
+		tft_fill_screen(yellow_color);			
+		delay_systick_ms(500);		
+		tft_fill_screen(cyan_color);			
+		delay_systick_ms(500);	
+		tft_fill_screen(blue_color);			
+		delay_systick_ms(500);
+		tft_write_font(0x0011, 0x0011,'a', black_color);	
 		delay_systick_ms(2000);		
 	}
 }

@@ -114,7 +114,7 @@ unsigned char Font_symbol[96][8] =
 		{0x00,0x07,0x0E,0x1C,0x11,0x1E,0x00,0x00} //  
 	}; 
 
-//FUNCION****************************************************************
+//DEFINE****************************************************************
 
 // Config RST = PC10
 #define TFT_RST_LOW             	 gpio_output(GPIOC, TFT_RST, PIN_RESET)
@@ -126,7 +126,7 @@ unsigned char Font_symbol[96][8] =
 #define TFT_CS_HIGH             	 gpio_output(GPIOC, TFT_CS, PIN_SET)
 #define TFT_CS_ACTIVE           	 gpio_config(GPIOC, PORTC, TFT_CS, PIN_OUTPUT)
 
-// Config RS = PC8
+// Config DC_X = PC8
 #define TFT_DC_X_LOW              	 gpio_output(GPIOC, TFT_DC_X, PIN_RESET)
 #define TFT_DC_X_HIGH             	 gpio_output(GPIOC, TFT_DC_X, PIN_SET)
 #define TFT_DC_X_ACTIVE           	 gpio_config(GPIOC, PORTC, TFT_DC_X, PIN_OUTPUT)
@@ -141,7 +141,13 @@ unsigned char Font_symbol[96][8] =
 #define TFT_RD_HIGH              	 gpio_output(GPIOC, TFT_RD, PIN_SET)
 #define TFT_RD_ACTIVE				 gpio_config(GPIOC, PORTC, TFT_RD, PIN_OUTPUT)
 
-// Config PIN_______________________________________________________________	
+// Config D0 ~ D7
+//uint32_t D0_7 = TFT_D0 | TFT_D1 | TFT_D2 | TFT_D3 | TFT_D4 | TFT_D5 | TFT_D6 | TFT_D7;
+//#define TFT_PIN_D_CLEAR       		 gpio_output(GPIOD, D0_7, PIN_RESET)
+
+//FUNCION****************************************************************
+
+// Config PIN Input_______________________________________________________________	
 void SetReadPin(void)
 {
 	gpio_config(GPIOD, PORTD, TFT_D0 , PIN_INPUT);
@@ -154,6 +160,7 @@ void SetReadPin(void)
 	gpio_config(GPIOD, PORTD, TFT_D7 , PIN_INPUT);	
 }
 
+// Config PIN Output_______________________________________________________________
 void SetWritePin(void)
 {
 	gpio_config(GPIOD, PORTD, TFT_D0 , PIN_OUTPUT);
@@ -164,27 +171,30 @@ void SetWritePin(void)
 	gpio_config(GPIOD, PORTD, TFT_D5 , PIN_OUTPUT);
 	gpio_config(GPIOD, PORTD, TFT_D6 , PIN_OUTPUT);
 	gpio_config(GPIOD, PORTD, TFT_D7 , PIN_OUTPUT);	
+	
+	GPIOD->ODR = 0;
 }
 
+// Config PIN_______________________________________________________________
 void tft_pin_config(void)
 {
-	TFT_RST_ACTIVE; TFT_RST_LOW;
+	TFT_RST_ACTIVE; TFT_RST_HIGH;
 	
-	TFT_CS_ACTIVE; TFT_CS_LOW;
+	TFT_CS_ACTIVE; TFT_CS_HIGH;
 	
-	TFT_DC_X_ACTIVE; TFT_DC_X_LOW;
+	TFT_DC_X_ACTIVE; TFT_DC_X_HIGH;
 	
 	TFT_WR_ACTIVE; TFT_WR_HIGH;
 	
 	TFT_RD_ACTIVE; TFT_RD_HIGH;
 	
-	SetWritePin();
+	SetWritePin(); 
 }
 
 // Write 8 bit value_______________________________________________________________	
 void write_8b(uint8_t value)
-{		
-	GPIOD->ODR = (uint16_t)value & 0x00FF;
+{
+	GPIOD->ODR = (uint32_t)(value & 0xFF);
 }
 
 // Read 8 bit value_______________________________________________________________	
@@ -202,10 +212,12 @@ void tft_write_data_8b(uint8_t data)
 {
 	TFT_CS_LOW;
 	
+	TFT_RST_HIGH;
+	
 	TFT_DC_X_HIGH;
 
 	TFT_RD_HIGH;
-	
+	  
 	TFT_WR_LOW;
 	
 	write_8b(data);
@@ -218,11 +230,11 @@ void tft_write_data_8b(uint8_t data)
 // Write 16 bit data_______________________________________________________________	
 void tft_write_data_16b(uint16_t data)
 {
-	uint16_t data_h = data >> 8;
-	uint16_t data_l = data & 0xFF;
+	uint8_t data_h = (data >> 8) & 0xFF;
+	tft_write_data_8b(data_h);		
 	
-	write_8b(data_h);	
-	write_8b(data_l);		
+	uint8_t data_l = data & 0xFF;
+	tft_write_data_8b(data_l);		
 }
 
 // Write 8 bit cmd_______________________________________________________________	
@@ -230,9 +242,11 @@ void tft_write_cmd_8b(uint8_t cmd)
 {
 	TFT_CS_LOW;
 	
-	TFT_DC_X_LOW;
+	TFT_RST_HIGH;
 	
 	TFT_RD_HIGH;
+	
+	TFT_DC_X_LOW;
 	
 	TFT_WR_LOW;
 	
@@ -287,111 +301,6 @@ uint16_t tft_read_data_16b(void)
 
 //FUNCION****************************************************************
 
-// Set coordinate pixel_______________________________________________________________	
-void tft_set_coordinates(uint16_t S_col_data, uint16_t E_col_data, uint16_t S_row_data, uint16_t E_row_data)
-{
-	// Set Column address
-	tft_write_cmd_8b(tft_column_addr);               					
-	
-	// write data SC	
-	tft_write_data_16b(S_col_data);
-	
-	// write data EC	
-	tft_write_data_16b(E_col_data);
-	
-	// Set Page adrress
-	tft_write_cmd_8b(tft_page_addr);                					
-	
-	// write data SP	
-	tft_write_data_16b(S_row_data);
-	
-	// write data EP	
-	tft_write_data_16b(E_row_data);
-	
-	// Write to RAM
-	tft_write_cmd_8b(tft_memory_wr);                 	
-}
-
-// Write memory data 1 pixel_______________________________________________________________	
-void tft_write_pixel(uint16_t col, uint16_t row, uint16_t m_data)
-{
-	// Check col and row
-	if((col >= tft_col) || (row >= tft_row))
-		return;
-	
-	// Set coordinate
-	tft_set_coordinates(col, col+1, row, row+1);
-	
-	// Write data
-	tft_write_data_16b(m_data);
-	
-	// Write to RAM
-	tft_write_cmd_8b(tft_memory_wr);  	
-}
-
-// Write memory data multi pixel_______________________________________________________________	
-void tft_fill_screen(uint16_t S_col,uint16_t E_col, uint16_t S_row, uint16_t E_row, uint16_t color)
-{	
-	// Check col and row
-	if((E_col >= tft_col) || (E_row >= tft_row))
-		return;	
-	
-	uint16_t delta_col, delta_row;
-	
-	delta_col = E_col - S_col;
-	delta_row = E_row - S_row;
-	
-	// Set coordinate
-	tft_set_coordinates(S_col, E_col, S_row, E_row);	
-	
-	// Write data for each pixel
-	for(uint16_t i_col = 0; i_col < delta_col; i_col++)
-	{
-		for(uint16_t i_row = 0; i_row < delta_row; i_row++)
-		{
-			// Write data
-			tft_write_pixel(i_row,i_col,color);	
-		}	
-	} 	
-}
-
-// Write font data_______________________________________________________________	
-void tft_write_font(uint16_t font_col, uint16_t font_row, uint8_t font_ascii, uint16_t font_color)
-{
-	tft_fill_screen(0,0x13F,0,0x0EF,white_color);
-	
-	for(int row = 0; row < 8; row++)
-	{
-		for(int col = 0; col < 8; col++)
-		{
-			if((Font_symbol[font_ascii - 0x20][row] >> (7 - col)) & 0xFF)
-			{
-				tft_write_pixel(font_col + col, font_row + row, font_color);
-			}
-			else
-			{
-				tft_write_pixel(font_col + col, font_row + row, white_color);
-			}
-		}
-	}
-}
-
-// Read memory data 1 pixel_______________________________________________________________	
-uint16_t tft_read_data_pixel(uint16_t col, uint16_t row)
-{
-	uint16_t rd_data;
-	
-	tft_set_coordinates(col, col+1, row, row+1);
-	
-	tft_write_cmd_8b(tft_memory_rd);
-	
-	tft_read_data_16b();								// dummy data
-	
-	rd_data= tft_read_data_16b();						// Read data
-	
-	return rd_data;
-}
-
 // TFT config coordinate_______________________________________________________________	
 void tft_access_ctrl(int dir_dislay)
 {
@@ -434,118 +343,49 @@ void tft_access_ctrl(int dir_dislay)
 			break;									
 	}
 	
-	if(dir_dislay < 4)
-	{
-		value_h = 0x00EF;							// 239
-		value_v = 0x013F;							// 319
-	}
-	else if(dir_dislay >= 4)
-	{
-		value_h = 0x013F;
-		value_v = 0x00EF;
-	}
+	// Set data
 	M_data |= 0x08;			// Set BRG = 1, MH = 0, ML = 0
 	
+	// Write command memory access
 	tft_write_cmd_8b(tft_memory_access);
 	
+	// Write data
 	tft_write_data_8b(M_data & 0xFF);
-	
-	tft_set_coordinates(0,value_h,0,value_v);
 }
 
+// TFT MADCTL config_______________________________________________________________	
 void MADCTL_config(MADCTL_para MADCTL_data)
 {
-	uint16_t read_value = 0;
-
-	// Top - Bottom
-	if(MADCTL_data.MADCTL_B7 == Top_to_Bottom)
-	{
-		read_value |= 0 << 7;
-	}
-	else if(MADCTL_data.MADCTL_B7 == Bottom_to_Top)
-	{
-		read_value |= 1 << 7;
-	}
-		
-	// Left - Right
-	if(MADCTL_data.MADCTL_B6 == Left_to_Right)
-	{
-		read_value |= 0 << 6;
-	}
-	else if(MADCTL_data.MADCTL_B6 == Right_to_Left)
-	{
-		read_value |= 1 << 6;
-	}	
-
-	// Normal - Reverse
-	if(MADCTL_data.MADCTL_B5 == Normal_mode)
-	{
-		read_value |= 0 << 5;
-	}
-	else if(MADCTL_data.MADCTL_B5 == Reverse_mode)
-	{
-		read_value |= 1 << 5;
-	}
-
-	// LCD Register Top - Bottom
-	if(MADCTL_data.MADCTL_B4 == LCD_Res_TtB)
-	{
-		read_value |= 0 << 4;
-	}
-	else if(MADCTL_data.MADCTL_B4 == LCD_Res_BtT)
-	{
-		read_value |= 1 << 4;
-	}	
-
-	// Interface RGB
-	if(MADCTL_data.MADCTL_B3 == RGB_interface)
-	{
-		read_value |= 0 << 3;
-	}
-	else if(MADCTL_data.MADCTL_B3 == BGR_interface)
-	{
-		read_value |= 1 << 3;
-	}
-
-	// LCD Register Left - Right
-	if(MADCTL_data.MADCTL_B2 == LCD_Res_LtR)
-	{
-		read_value |= 0 << 2;
-	}
-	else if(MADCTL_data.MADCTL_B2 == LCD_Res_RtL)
-	{
-		read_value |= 1 << 2;
-	}
+	uint8_t read_value =  (MADCTL_data.MADCTL_B2 << 2)
+						| (MADCTL_data.MADCTL_B3 << 3)
+						| (MADCTL_data.MADCTL_B4 << 4)
+						| (MADCTL_data.MADCTL_B5 << 5) 
+						| (MADCTL_data.MADCTL_B6 << 6)
+						| (MADCTL_data.MADCTL_B7 << 7);
 	
+	// tft send command madctl display
+	tft_write_cmd_8b(tft_madctl_display);
 	// Write data
-	tft_write_data_16b(read_value);
+	tft_write_data_8b(read_value);
 	
 }
 
-// TFT Reset_______________________________________________________________	
-void TFT_Reset() 
+// TFT reset soft_______________________________________________________________	
+void tft_reset(void)
 {
-	TFT_RST_HIGH;
-	delay_systick_us(50);
 	TFT_RST_LOW;
-	TFT_CS_HIGH;
-	delay_systick_us(50);
-	tft_write_cmd_8b(0x01);
-	TFT_CS_LOW;
+	delay_systick_ms(5);
+	TFT_RST_HIGH;
 }
 
 // TFT init_______________________________________________________________	
 void tft_init(void)
-{	
-	// TFT config PIN
-	//tft_pin_config();
-		
-	// TFT Reset
-	//TFT_Reset();
-	tft_write_cmd_8b(tft_reset);
+{		
+	tft_reset();
 	
-	// TFT config coordinate
-	tft_access_ctrl(0);
+	// TFT Reset hardware
+	tft_write_cmd_8b(tft_rst);
+	delay_systick_ms(1000);
 	
 	// config MADCTL
 	MADCTL_para MADCTL_inform;
@@ -638,16 +478,6 @@ void tft_init(void)
 	// Gamma curve selected
 	tft_write_cmd_8b(tft_gamma_set);
 	tft_write_data_8b(0x01);	
-	
-	// RGB Interface
-	tft_write_cmd_8b(tft_rgb_interface);
-	tft_write_data_8b(0xC2);
-
-	// Interface control
-	tft_write_cmd_8b(tft_interface_ctrl);
-	tft_write_data_8b(0x01);
-	tft_write_data_8b(0x00);
-	tft_write_data_8b(0x06);
 
 	//Positive Gamma Correction
 	tft_write_cmd_8b(tft_pos_gamma_correct);
@@ -687,12 +517,119 @@ void tft_init(void)
 
 	// Sleep out
 	tft_write_cmd_8b(tft_sleep_out);
-
+	delay_systick_ms(1000);
+	
 	// Turn on Display 
 	tft_write_cmd_8b(tft_display_on);
+	delay_systick_ms(1000);
+			
+	// access control
+	tft_access_ctrl(1);		
+	
+}
 
-	// TFT memory write
-	tft_write_cmd_8b(tft_memory_wr);
+// Set coordinate pixel_______________________________________________________________	
+void tft_set_coordinates(uint16_t S_col_data, uint16_t E_col_data, uint16_t S_row_data, uint16_t E_row_data)
+{
+	// Set Column address
+	tft_write_cmd_8b(tft_column_addr);               					
+	
+	// write data SC	
+	tft_write_data_16b(S_col_data);
+
+	// write data EC	
+	tft_write_data_16b(E_col_data);	
+	
+	// Set Page adrress
+	tft_write_cmd_8b(tft_page_addr);                					
+	
+	// write data SP	
+	tft_write_data_16b(S_row_data);
+	
+	// write data EP	
+	tft_write_data_16b(E_row_data);
+
+	// Write to RAM
+	tft_write_cmd_8b(tft_memory_wr);                 	
+}
+
+// Write memory data 1 pixel_______________________________________________________________	
+void tft_write_pixel(uint16_t col, uint16_t row, uint16_t m_data)
+{
+	// Check col and row
+	if((col >= tft_col) || (row >= tft_row))
+		return;
+	
+	// Set coordinate
+	tft_set_coordinates(col, col+1, row, row+1);
+	
+	// Write data
+	tft_write_data_16b(m_data);	 	
+}
+
+// TFT fill area_______________________________________________________________	
+void tft_fill_area(uint16_t S_col,uint16_t E_col, uint16_t S_row, uint16_t E_row, uint16_t color)
+{	
+	// Check col and row
+	if((E_col >= tft_col) || (E_row >= tft_row))
+		return;	
+	
+	// Set coordinate
+	tft_set_coordinates(S_col, E_col, S_row, E_row);	
+	
+	// Write data for each pixel
+	for(uint16_t i_col = S_col; i_col <= E_col; i_col++)
+	{
+		for(uint16_t i_row = S_row; i_row <= E_row; i_row++)		
+		{
+			// Write data
+			tft_write_pixel(i_row,i_col,color);	
+		}	
+	} 			
+}
+  
+// TFT fill screen_______________________________________________________________
+void tft_fill_screen(uint16_t color)
+{
+	tft_fill_area(0,tft_col-1,0,tft_row-1,color);
+	
+}
+
+// Write font data_______________________________________________________________	
+void tft_write_font(uint16_t font_col, uint16_t font_row, uint8_t font_ascii, uint16_t font_color)
+{
+	tft_fill_area(font_col,font_col+8,font_row,font_row+8,white_color);
+	
+	for(int row = 0; row < 8; row++)
+	{
+		for(int col = 0; col < 8; col++)
+		{
+			if((Font_symbol[font_ascii - 0x20][row] >> (7 - col)) & 0xFF)
+			{
+				tft_write_pixel(font_col + col, font_row + row, font_color);
+			}
+			else
+			{
+				tft_write_pixel(font_col + col, font_row + row, white_color);
+			}
+		}
+	}
+}
+
+// Read memory data 1 pixel_______________________________________________________________	
+uint16_t tft_read_data_pixel(uint16_t col, uint16_t row)
+{
+	uint16_t rd_data;
+	
+	tft_set_coordinates(col, col+1, row, row+1);
+	
+	tft_write_cmd_8b(tft_memory_rd);
+	
+	tft_read_data_16b();								// dummy data
+	
+	rd_data= tft_read_data_16b();						// Read data
+	
+	return rd_data;
 }
 
 
