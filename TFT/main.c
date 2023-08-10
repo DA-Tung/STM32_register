@@ -10,6 +10,7 @@
 #include "systick.h"
 #include "gpio.h"
 #include "tft.h"
+#include "front.h"
 
 // Declare variable***********************************************************
 
@@ -34,19 +35,19 @@ int main()
 	tft_init();
 	
 	while(1)
-	{
-		tft_fill_screen(green_color);	
-		delay_systick_ms(500);
-		tft_fill_screen(red_color);			
-		delay_systick_ms(500);	
-		tft_fill_screen(yellow_color);			
-		delay_systick_ms(500);		
+	{	
 		tft_fill_screen(cyan_color);			
 		delay_systick_ms(500);	
-		tft_fill_screen(blue_color);			
-		delay_systick_ms(500);
-		tft_write_font(0x0011, 0x0011,'a', black_color);	
-		delay_systick_ms(2000);		
+		tft_fill_screen(green_color);			
+		delay_systick_ms(500);	
+		tft_write_string(0x0011,0x0011,"Toi la toi",Font_16x26,black_color,mode_v);
+		delay_systick_ms(1000);	
+		tft_drawing_circle(0x0066,0x0066,50,red_color);
+		delay_systick_ms(1000);	
+		tft_fill_circle(0x00BB,0x00AA,40,red_color);
+		delay_systick_ms(1000);			
+		tft_drawing_Line(0x0066,0x00E3,3,50,red_color);
+		delay_systick_ms(1000);
 	}
 }
 

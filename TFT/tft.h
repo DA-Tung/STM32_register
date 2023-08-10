@@ -3,29 +3,32 @@
 
 #include "stm32f4xx.h"
 #include "stm32f407xx.h"
+#include "front.h"
 
 // Define PIN TFT
-#define TFT_RST					 	10U    // PC10 - eset TFT
+#define TFT_RST					 	10U    // PC10 - Reset TFT
 #define TFT_CS					 	9U     // PC9 - Chip select control
 #define TFT_DC_X        		 	8U     // PC8 - Select command/data control
 #define TFT_WR           		 	7U     // PC7 - Write data
 #define TFT_RD           		 	6U     // PC6 - Read data
 
-#define TFT_D0					 	8U     // PD8
-#define TFT_D1					 	9U     // PD9
-#define TFT_D2					 	10U    // PD10
-#define TFT_D3					 	11U    // PD11
-#define TFT_D4					 	12U    // PD12
-#define TFT_D5					 	13U    // PD13
-#define TFT_D6					 	14U    // PD14
-#define TFT_D7					 	15U    // PD15
+#define TFT_D0					 	0U     // PD0
+#define TFT_D1					 	1U     // PD1
+#define TFT_D2					 	2U     // PD2
+#define TFT_D3					 	3U     // PD3
+#define TFT_D4					 	4U     // PD4
+#define TFT_D5					 	5U     // PD5
+#define TFT_D6					 	6U     // PD6
+#define TFT_D7					 	7U     // PD7
+
 
 // Level 1 command
 #define tft_no_operation         	0x00								// No operation
-#define tft_reset                	0x01								// Reset software
+#define tft_rst               		0x01								// Reset software
 #define tft_rd_id_inform         	0x04								// 
 #define tft_rd_status            	0x09
 #define tft_rd_power_mode			0x0A
+#define tft_madctl_display			0x0B
 #define tft_rd_pixel_format      	0x0C
 #define tft_rd_image_format      	0x0D
 #define tft_rd_signal_mode       	0x0E
@@ -93,8 +96,8 @@
 #define LCD_3GAMMA_EN           	0xF2   /* 3 Gamma enable register */
 #define LCD_PRC                  	0xF7   /* Pump ratio control register */
 
-#define tft_row		  				0x00F0
-#define tft_col		 				0x0140
+#define tft_col		  				0x00F0
+#define tft_row		 				0x0140
 
 #define Top_to_Bottom    			0U
 #define Bottom_to_Top    			1U
@@ -137,6 +140,12 @@ typedef struct
 	uint16_t MADCTL_B2;	
 }MADCTL_para;
 
+typedef enum
+{
+	mode_h = 0,
+	mode_v = 1
+}Mode_font;
+
 // config PIN and data read/write
 void tft_init(void);
 void tft_pin_config(void);
@@ -153,13 +162,18 @@ uint16_t tft_read_data_16b(void);
 void MADCTL_config(MADCTL_para MADCTL_data);
 void tft_access_ctrl(int dir_dislay);
 void tft_init(void);
+void tft_reset(void);
 
 void tft_set_coordinates(uint16_t S_col_data, uint16_t E_col_data, uint16_t S_row_data, uint16_t E_row_data);
 void tft_write_pixel(uint16_t col, uint16_t row, uint16_t m_data);
-void tft_fill_screen(uint16_t S_col,uint16_t E_col, uint16_t S_row, uint16_t E_row, uint16_t color);
+void tft_fill_area(uint16_t S_col,uint16_t E_col, uint16_t S_row, uint16_t E_row, uint16_t color);
+void tft_fill_screen(uint16_t color);
 uint16_t tft_read_data_pixel(uint16_t col, uint16_t row);
-void tft_write_font(uint16_t font_col, uint16_t font_row, uint8_t font_ascii, uint16_t font_color);
-void TFT_Reset(void);
+void tft_write_font(uint16_t X_Coor, uint16_t Y_Coor, char ch, FontDef font, uint16_t font_color);
+void tft_write_string(uint16_t X_Coor, uint16_t Y_Coor, char *str, FontDef font, uint16_t font_color, Mode_font mode);
+void tft_drawing_circle(uint16_t X_Coor, uint16_t Y_Coor, uint16_t Radius, uint16_t Color);
+void tft_fill_circle(uint16_t X_Coor, uint16_t Y_Coor, uint16_t Radius, uint16_t Color);
+void tft_drawing_Line(uint16_t X_Coor, uint16_t Y_Coor, uint16_t witdh, uint16_t height,uint16_t Color);
 
 #endif //_TFT_H_
 
