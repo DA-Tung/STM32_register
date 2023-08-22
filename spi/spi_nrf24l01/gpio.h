@@ -58,5 +58,6 @@ void gpio_config(GPIO_TypeDef* GPIOx, uint32_t PORTx, uint32_t PINx, IO_config P
 void gpio_output(GPIO_TypeDef* GPIOx, uint16_t PINx, GPIO_PinState state);
 Bit_Status gpio_input(GPIO_TypeDef* GPIOx, uint16_t PINx);
 
-#endif
+#endif // _GPIO_H_
+
 

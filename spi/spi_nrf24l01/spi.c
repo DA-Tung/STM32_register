@@ -3,8 +3,8 @@
 #include "stm32f407xx.h"
 #include "spi.h"
 
-// SPI MASTER INIT_______________________________________________________________
-void spi_init_master(SPI_TypeDef* SPIx)
+// SPI MASTER Config Pin_______________________________________________________________
+void spi_ConfigPin(void)
 {
 	// Enable GPIOA
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;
@@ -23,6 +23,12 @@ void spi_init_master(SPI_TypeDef* SPIx)
 	
 	// Alternate funcion AF5
 	GPIOA->AFR[0] |= (5 << 20) | (5 << 24) | (5 << 28);
+}
+
+// SPI MASTER INIT_______________________________________________________________
+void spi_init_master(SPI_TypeDef* SPIx)
+{	
+	spi_ConfigPin();
 	
 //	// Disenable SPI
 //	SPIx->CR1 &= ~SPI_CR1_SPE;
@@ -159,6 +165,8 @@ void spi_receive(SPI_TypeDef* SPIx, uint8_t* data, uint8_t length)
 		*(data + i) = SPIx->DR;	
 	}
 }
+
+
 
 // SPI READ_WRITE_______________________________________________________________
 void spi_readwrite(SPI_TypeDef* SPIx, uint8_t* write_data, uint8_t* read_data, uint8_t length)
