@@ -1,3 +1,5 @@
+#ifndef _LIS3DSH_SPI_H_
+#define _LIS3DSH_SPI_H_
 
 #include "stm32f4xx.h"
 #include "stm32f407xx.h"
@@ -69,13 +71,21 @@
 #define BW_FILTER_200Hz     0x80
 #define BW_FILTER_50Hz      0xC0
 
+typedef struct
+{
+	int16_t Axis_X;
+	int16_t Axis_Y;
+	int16_t Axis_Z;	
+}Value_Axis_G;
 
-void Lis3dsh_write_data(uint8_t addr_reg, uint8_t *data_write);
-void Lis3dsh_read_data(uint8_t addr_reg, uint8_t *data_read);
+uint8_t Lis3dsh_readwrite(uint8_t rw_data);
+void Lis3dsh_write_data(uint8_t addr_reg, uint8_t data_write);
+uint8_t Lis3dsh_read_data(uint8_t addr_reg);
 void Lis3dsh_init(uint8_t scale);
-void Lis3dsh_get_value(uint8_t scale, int16_t *raw_data);
-static uint8_t Lis3dsh_readwrite(uint8_t rw_data);
-
+Value_Axis_G Lis3dsh_get_value(uint8_t sensitivity);
+uint8_t Lis3dsh_get_status(void);
+	
+#endif //_LIS3DSH_SPI_H_
 
 
 

@@ -1,9 +1,9 @@
+
 #include "stm32f4xx.h"
 #include "stm32f407xx.h"
 #include "gpio.h"
 
-// GPIO_OUTPUT
-//-----------------------------------------------------------------------------------------------------------------------------------------------
+// GPIO OUTPUT _______________________________________________________________
 void gpio_output(GPIO_TypeDef* GPIOx, uint16_t PINx, GPIO_PinState state)
 {
 		// Set bit
@@ -16,7 +16,7 @@ void gpio_output(GPIO_TypeDef* GPIOx, uint16_t PINx, GPIO_PinState state)
 		else if(state == PIN_TOGGLE) GPIOx->ODR ^= (1 << PINx);	
 }
 
-// GPIO_INPUT_______________________________________________________________
+// GPIOINPUT _______________________________________________________________
 Bit_Status gpio_input(GPIO_TypeDef* GPIOx, uint16_t PINx)
 {	
 		Bit_Status status;
@@ -28,7 +28,7 @@ Bit_Status gpio_input(GPIO_TypeDef* GPIOx, uint16_t PINx)
 	return status;	
 }
 
-// GPIO_CONFIG_______________________________________________________________
+// GPIO CONFIG _______________________________________________________________
 void gpio_config(GPIO_TypeDef* GPIOx, uint32_t PORTx, uint32_t PINx, IO_config PIN_IO)
 {
 		// Enable GPIO
@@ -48,6 +48,15 @@ void gpio_config(GPIO_TypeDef* GPIOx, uint32_t PORTx, uint32_t PINx, IO_config P
 			// Configure output speed
 			GPIOx->OSPEEDR |= (uint32_t)(3 << (PINx*2));				
 		}
+		// Input Pin
+		else if(PIN_IO == PIN_INPUT)
+		{
+			// Select PIN and Mode I/O
+			GPIOx->MODER &= ~(1 << (PINx*2));		
+				
+			// Configure output speed
+			GPIOx->OSPEEDR &= ~((uint32_t)(3 << (PINx*2)));				
+		}		
 }
 
 

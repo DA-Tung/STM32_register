@@ -3,8 +3,8 @@
 #include "stm32f407xx.h"
 #include "spi.h"
 
-// SPI MASTER INIT_______________________________________________________________
-void spi_init_master(SPI_TypeDef* SPIx)
+// SPI MASTER Config PIN_______________________________________________________________
+void spi_master_configPIN(void)
 {
 	// Enable GPIOA
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;
@@ -23,7 +23,11 @@ void spi_init_master(SPI_TypeDef* SPIx)
 	
 	// Alternate funcion AF5
 	GPIOA->AFR[0] |= (5 << 20) | (5 << 24) | (5 << 28);
-	
+}
+
+// SPI MASTER INIT_______________________________________________________________
+void spi_init_master(SPI_TypeDef* SPIx)
+{
 //	// Disenable SPI
 //	SPIx->CR1 &= ~SPI_CR1_SPE;
 	
@@ -70,8 +74,8 @@ void spi_init_master(SPI_TypeDef* SPIx)
 	SPIx->CRCPR = 7; 
 }
 
-// SPI SLAVE INIT_______________________________________________________________
-void spi_init_slave(SPI_TypeDef* SPIx)
+// SPI SLAVE CONFIG PIN_______________________________________________________________
+void spi_slave_configPIN(void)
 {
 	// Enable GPIOB
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN;
@@ -90,7 +94,11 @@ void spi_init_slave(SPI_TypeDef* SPIx)
 	
 	// Alternate funcion AF5
 	GPIOB->AFR[1] |= (5 << 16) |(5 << 20) |(5 << 24) |(5 << 28);
-	
+}
+
+// SPI SLAVE INIT_______________________________________________________________
+void spi_init_slave(SPI_TypeDef* SPIx)
+{
 	// Enable SPI2
 	RCC->APB1ENR |= RCC_APB1ENR_SPI2EN;
 	
