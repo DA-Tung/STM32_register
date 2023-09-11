@@ -4,112 +4,117 @@
 #include "modbus_rtu.h"
 #include "usart.h"
 #include "gpio.h"
+#include "crc.h"
 
-#define USART_MODBUS		USART1
+#define USART_MODBUS				USART2
 
-#define TX_SEND				gpio_output(GPIOA, PIN4, PIN_SET)
-#define RX_SEND				gpio_output(GPIOA, PIN4, PIN_RESET)
+#define TX_ENABLE					gpio_output(GPIOA, PIN4, PIN_SET)
+#define TX_DISENABLE				gpio_output(GPIOA, PIN4, PIN_RESET)
 
-// MODBUS CRC_______________________________________________________________
-uint16_t modbus_crc(uint8_t *data_crc, uint8_t count_crc)
+//// MODBUS CRC_______________________________________________________________
+//uint16_t modbus_crc(uint8_t *data_crc, uint8_t count_crc)
+//{
+//	uint16_t crc_calc = 0xFFFF;
+//	
+//	for (int j = 0; j < count_crc; j++)
+//	{
+//		crc_calc = crc_calc ^ (uint16_t)(*data_crc);
+//		
+//		for(int i = 0; i < 8; i++)
+//		{
+//			if(crc_calc & 0x0001)
+//			{
+//				crc_calc = (crc_calc >> 1) ^ 0xA001;
+//			}
+//			else
+//			{
+//				crc_calc >>= 1;		
+//			}
+//		}
+//	}
+//	return crc_calc;
+//}
+
+// MODBUS READ QUERY _______________________________________________________________
+void modbus_read_query(MB_READ_QUERY *Data_Read_Query)
 {
-	uint16_t crc_calc = 0xFFFF;
+	// Start Tx
+	TX_ENABLE;	
 	
-	for (int j = 0; j < count_crc; j++)
-	{
-		crc_calc = crc_calc ^ (uint16_t)(*data_crc);
-		
-		for(int i = 0; i < 8; i++)
-		{
-			if(crc_calc & 0x0001)
-			{
-				crc_calc = (crc_calc >> 1) ^ 0xA001;
-			}
-			else
-			{
-				crc_calc >>= 1;		
-			}
-		}
-	}
-	return crc_calc;
-}
-
-// QUERY READ MODBUS_______________________________________________________________
-void modbus_read_frame(modbus_para_read data_read_mb)
-{
-	RX_SEND;
+	uint8_t Buffer_Read_Query[8];
 	
-	uint8_t *buffer_read_mb;
-	
-	uint16_t crc_data;
-		
 	// Address Slave
-	buffer_read_mb[0] = data_read_mb.addr_slave;
+	Buffer_Read_Query[0] = Data_Read_Query->Addr_Slave;
 	
-	// Funcion
-	buffer_read_mb[1] = data_read_mb.funcion_mb;
+	// Funcion Code
+	Buffer_Read_Query[1] = Data_Read_Query->Func_Code;
 	
-	//Address
-	buffer_read_mb[2] = (data_read_mb.start_addr >> 8) & 0xFF;
-	buffer_read_mb[3] = data_read_mb.start_addr &0xFF;
+	// Start Address
+	Buffer_Read_Query[2] = (Data_Read_Query->Start_Addr >> 8) & 0xFF;
+	Buffer_Read_Query[3] = Data_Read_Query->Start_Addr &0xFF;
 	
-	// Quanlity coils
-	buffer_read_mb[4] = (data_read_mb.num_reg >> 8) & 0xFF;
-	buffer_read_mb[5] = data_read_mb.num_reg &0xFF;	
+	// Number register
+	Buffer_Read_Query[4] = (Data_Read_Query->Num_Reg >> 8) & 0xFF;
+	Buffer_Read_Query[5] = Data_Read_Query->Num_Reg &0xFF;	
 	
 	// Check CRC
-	crc_data = modbus_crc(buffer_read_mb,6);
+	uint16_t crc_data = crc16(Buffer_Read_Query,6);
 	
 	//Read check CRC
-	buffer_read_mb[6] = crc_data & 0xFF;
-	buffer_read_mb[7] = (crc_data >> 8) & 0xFF;
+	Buffer_Read_Query[6] = crc_data & 0xFF;
+	Buffer_Read_Query[7] = (crc_data >> 8) & 0xFF;
 	
 	// Send data
-	usart_send_string(USART_MODBUS, (char *)buffer_read_mb);
+	usart_transmit_multi_data(USART_MODBUS, Buffer_Read_Query, 8);	
+	
+	// End Tx
+	TX_DISENABLE;
 }
 
-// QUERY WRITE MODBUS_______________________________________________________________
-void modbus_write_frame(modbus_para_write data_write_mb)
+// MODBUS READ RESPONSE _______________________________________________________________
+void modbus_read_response(MB_READ_RESPONSE *Data_Read_Response)
 {
-	TX_SEND; 
-	
-	uint8_t *buffer_write_mb;
+	uint8_t Buffer_Read_Response[256];
 
-	// Write address slave
-	buffer_write_mb[0] = data_write_mb.addr_slave;
+	// Start Tx
+	TX_ENABLE;	
+
+	// Address Slave
+	Buffer_Read_Response[0] = Data_Read_Response->Addr_Slave;
 	
-	// Write funcion code
-	buffer_write_mb[1] = data_write_mb.funcion_mb;
+	// Funcion Code
+	Buffer_Read_Response[1] = Data_Read_Response->Func_Code;	
 	
-	// Write start address
-	buffer_write_mb[2] = (data_write_mb.start_addr >> 8) & 0xFF;
-	buffer_write_mb[3] = data_write_mb.start_addr & 0xFF;
+	// Byte count
+	Buffer_Read_Response[2] = (Data_Read_Response->Byte_Count)*2;
 	
-	// Write quanlity register
-	buffer_write_mb[4] = (data_write_mb.num_reg >> 8) & 0xFF;
-	buffer_write_mb[5] = data_write_mb.num_reg & 0xFF;
-	
-	// Write length of data
-	buffer_write_mb[6] = data_write_mb.length_data;
+	int index = 3;
+	int StartAddr = Data_Read_Response->StartAddrData;
 	
 	// Save data to buffer
-	for(int i = 0; i < buffer_write_mb[6]; i++)
+	for(int i = 0; i < Data_Read_Response->Byte_Count; i++)
 	{
-		buffer_write_mb[7 + i*2] = data_write_mb.value_data[i*2];
-		buffer_write_mb[8 + i*2] = data_write_mb.value_data[i*2 + 1];
-	}
-	
+		Buffer_Read_Response[index++] = (Data_Read_Response->Value_Data[StartAddr] >> 8) & 0xFF;
+		Buffer_Read_Response[index++] = Data_Read_Response->Value_Data[StartAddr] & 0xFF;
+		StartAddr++;
+	}	
+
 	// Check CRC
-	uint8_t count = data_write_mb.length_data*2 + 6;
+	uint16_t crc_data = crc16(Buffer_Read_Response,index);
 	
-	uint16_t crc_data = modbus_crc(buffer_write_mb,count);
-	
-	buffer_write_mb[count + 1] = crc_data & 0xFF;
-	buffer_write_mb[count + 2] = (crc_data >> 8) & 0xFF;
+	//Read check CRC
+	Buffer_Read_Response[index] = crc_data & 0xFF;
+	Buffer_Read_Response[index+1] = (crc_data >> 8) & 0xFF;
 	
 	// Send data
-	usart_send_string(USART_MODBUS, (char *)buffer_write_mb);	
-}	
+	usart_transmit_multi_data(USART_MODBUS, Buffer_Read_Response, index+2);
+	
+	// End Tx	
+	TX_DISENABLE;	
+} 
+
+
+
 
 
 
