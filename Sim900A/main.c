@@ -20,7 +20,7 @@
 
 char GsmTest[10] = "AT\r\n";
 char ActivateTxMode[20] = "AT+CMGF=1\r\n";
-char PhoneNum[30] = "AT+CMGS=\"+84359932752\"\r\n";
+char PhoneNum[30] = "AT+CMGS=\"+0961999596\"\r\n";
 char Message[100] = "Hello!!!";
 int CtrlZ = 26;
 char ch[1];
