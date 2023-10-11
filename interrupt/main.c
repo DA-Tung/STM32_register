@@ -13,31 +13,52 @@ int count_irq = 0;
 irq_config para_irq_handler;
 
 // Function***********************************************************
-void EXTI0_IRQHandler(void)
+void EXTI1_IRQHandler(void)
 {
-	if(EXTI->PR & EXTI_PR_PR1)
+	if((EXTI->PR & EXTI_PR_PR1) != 0)
 	{
+		// Clear bit
 		EXTI->PR |= EXTI_PR_PR1;
-		count_irq++;		
+		
+		if(gpio_input(GPIOA, PIN1) == 1)
+		{
+			count_irq++;			
+			gpio_output(GPIOD, PIN13, PIN_TOGGLE);
+		}
 	}
+}
+
+void GPIO_ConfigPIN(void)
+{	
+	// Config Pin
+//	gpio_config(GPIOA, PINA
+	
+	// Config PIN LED
+	gpio_config(GPIOD, PORTD,PIN12,PIN_OUTPUT);
+	gpio_config(GPIOD, PORTD,PIN13,PIN_OUTPUT);
+	gpio_config(GPIOD, PORTD,PIN14,PIN_OUTPUT);
+	gpio_config(GPIOD, PORTD,PIN15,PIN_OUTPUT);
 }
 
 // Program main***********************************************************
 int main()
-{
-
+{	
 	SysClock_configure();
 	
-	para_irq_handler.exti_port = SYSCFG_EXTICR1_EXTI0_PA;
+	GPIO_ConfigPIN();
+	
+	para_irq_handler.exti_port = SYSCFG_EXTICR1_EXTI1_PA;
 	para_irq_handler.trigger_level = rising_trigger;
-	para_irq_handler.irq_type = EXTI0_IRQn;
-	para_irq_handler.priority_level_irq = 0;
-	interrupt_config(GPIOC, PIN14, para_irq_handler);	
-//	interrupt_config(GPIOA, PIN0, SYSCFG_EXTICR1_EXTI0_PA ,rising_trigger);
+	para_irq_handler.irq_type = EXTI1_IRQn;
+	para_irq_handler.priority_level_irq = 1;
+	interrupt_config(GPIOA, PIN1, para_irq_handler);	
 	
 	while(1)
 	{
-
+		gpio_output(GPIOD, PIN12, PIN_TOGGLE);
+		delay_systick_ms(1000);
 	}
 }
+
+
 
